@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Update the system
-sudo export DEBIAN_FRONTEND=noninteractive
-sudo apt-get update -y 
-sudo apt-get upgrade -y
+export DEBIAN_FRONTEND=noninteractive
+sudo -E apt-get update -y 
+sudo -E apt-get upgrade -y
 
 # Check if Docker is installed, install it if it's not
 if ! command -v docker &> /dev/null
@@ -22,7 +22,7 @@ SERVICE=orijen-udf.service
 CONTAINER=orijen-udf
 
 # Preliminarily pull the Docker image
-sudo -E docker pull $IMAGE
+sudo docker pull $IMAGE
 
 # Create the systemd service file
 sudo bash -c "cat > /etc/systemd/system/$SERVICE <<EOF
