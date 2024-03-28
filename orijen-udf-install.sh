@@ -21,9 +21,6 @@ IMAGE=ghcr.io/kreynoldsf5/orijen-udf-service:latest
 SERVICE=orijen-udf.service
 CONTAINER=orijen-udf
 
-# Preliminarily pull the Docker image
-sudo docker pull $IMAGE
-
 # Create the systemd service file
 sudo bash -c "cat > /etc/systemd/system/$SERVICE <<EOF
 [Unit]
