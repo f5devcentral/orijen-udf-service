@@ -138,12 +138,11 @@ def main():
     metadata = query_metadata(metadata_base_url)
 
     if metadata:
-        payload = {"LabID": metadata['LabID']}
         max_retries = 6
         retries = 0
 
         while retries < max_retries:
-            success = send_sqs(metadata['SQS_URL'], payload)
+            success = send_sqs(metadata)
             if success:
                 print("Message sent to SQS successfully.")
                 retries = 0
