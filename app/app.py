@@ -25,15 +25,21 @@ def fetch_metadata(url: str, max_retries=5) -> dict|None:
                 print("Max retries reached. Giving up.")
                 return None
 
-def find_aws_cloudAccount(cloud_accounts: dict) -> dict|None:
+def find_aws_metadata(cloud_accounts: dict) -> dict|None:
     """
     Find the first cloud account with "type": "AWS_API_CREDENTIAL".
+    Return a dict containing the credential and fastest region.
     """
-    for account in cloud_accounts.get("cloudAccounts", []):
-        for credential in account.get("credentials", []):
-            if credential.get("type") == "AWS_API_CREDENTIAL":
-                return account
-    return None
+    try:
+        for account in cloud_accounts.get("cloudAccounts", []):
+            for credential in account.get("credentials", []):
+                if credential.get("type") == "AWS_API_CREDENTIAL":
+                    return {
+                        "aws_cred": credential,
+                        "region": find_aws_region(account)
+                    }
+    except Exception as e:
+        return None
 
 def find_aws_region(cloud_account: dict, default_region: str='us-west-2') -> str:
     """
@@ -61,14 +67,17 @@ def query_metadata(metadata_base_url: str) -> dict|None:
 
     deployment = fetch_metadata(deployment_url)
     if deployment is None:
+        print("Unable to find deployment data.")
         return None
     
     deployment_tags = fetch_metadata(deployment_tags_url)
     if deployment_tags is None:
+        print("Unable to find deployment tags.")
         return None
 
-    cloud_account = find_aws_cloudAccount(fetch_metadata(cloud_accounts_url))
-    if cloud_account is None:
+    aws_metadata = find_aws_metadata(fetch_metadata(cloud_accounts_url))
+    if aws_metadata is None:
+        print("Unable to find AWS metadata.")
         return None
 
     try:
@@ -76,24 +85,17 @@ def query_metadata(metadata_base_url: str) -> dict|None:
         deployer = deployment.get("deployment")["deployer"]
         lab_id = deployment_tags.get("LabID")
         sqs_url = deployment_tags.get("SQS")
-        aws_credential = cloud_account.get("credentials"),
-        region = find_aws_region(cloud_account)
 
-        if aws_credential is None:
-            print("AWS API Credentials not found.")
-            return None
-
-        aws_secret = aws_credential.get("secret")
-        aws_key = aws_credential.get("key")
+        aws_credential = aws_metadata.get("aws_cred")
 
         return {
             "depID": dep_id,
             "deployer": deployer,
             "labID": lab_id,
             "sqsURL": sqs_url,
-            "awsSecret": aws_secret,
-            "awsKey": aws_key,
-            "region": region
+            "awsSecret": aws_credential.get("secret"),
+            "awsKey": aws_credential.get("key"),
+            "region": aws_metadata.get("region")
         }
     except (KeyError, IndexError) as e:
         print(f"Error extracting metadata: {e}")
