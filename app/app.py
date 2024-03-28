@@ -113,9 +113,9 @@ def send_sqs(metadata: dict) -> dict|None:
             aws_secret_access_key=metadata['awsSecret']
         )
         message = {
-            'depID': metadata['dep_id'],
+            'depID': metadata['depID'],
             'deployer': metadata['deployer'],
-            'labID': metadata['lab_id'],
+            'labID': metadata['labID'],
         }
     except Exception as e:
         print(f"Error building SQS client and message: {e}")
