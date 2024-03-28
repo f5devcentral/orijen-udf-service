@@ -1,6 +1,9 @@
 #!/bin/bash
 
-# Check if Docker is installed, install it if needed
+# Update apt
+sudo DEBIAN_FRONTEND=noninteractive apt-get update --yes
+
+# Check if Docker is installed, install it if it's not
 if ! command -v docker &> /dev/null
 then
     echo "Docker could not be found, installing..."
