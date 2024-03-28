@@ -1,10 +1,11 @@
 """Module fetching metadata and sending to SQS"""
 import time
 import sys
+import json
 import requests
 import boto3
 
-def fetch_metadata(url, max_retries=5):
+def fetch_metadata(url: str, max_retries=5) -> dict|None:
     """
     Fetch metadata.
     Retry up to max_retries if the request fails.
@@ -24,67 +25,107 @@ def fetch_metadata(url, max_retries=5):
                 print("Max retries reached. Giving up.")
                 return None
 
-def find_aws_creds(cloud_accounts):
+def find_aws_cloudAccount(cloud_accounts: dict) -> dict|None:
     """
     Find the first cloud account with "type": "AWS_API_CREDENTIAL".
     """
     for account in cloud_accounts.get("cloudAccounts", []):
         for credential in account.get("credentials", []):
             if credential.get("type") == "AWS_API_CREDENTIAL":
-                return credential
+                return account
     return None
 
-def query_metadata(metadata_base_url):
+def find_aws_region(cloud_account: dict, default_region: str='us-west-2') -> str:
+    """
+    Find the fastest AWS region for this instance
+    """
+    latency_map = {}
+    for region in cloud_account["regions"]:
+        try:
+            url = f"https://dynamodb.{region}.amazonaws.com/ping"
+            r = requests.get(url)
+            latency_map[region] = r.elapsed.total_seconds()
+        except Exception as e:
+            pass
+    fastest_region = [k for k, v in sorted(latency_map.items(), key=lambda p: p[1], reverse=False)]
+    return fastest_region[0] if bool(fastest_region) else default_region
+
+def query_metadata(metadata_base_url: str) -> dict|None:
     """
     Query metadata service.
-    Retrieve AWS secret, AWS key, SQS URL, and Lab GUID.
+    Retrieve AWS secret, AWS key, SQS URL, Lab GUID, deployer, deploy ID, and region.
     """
+    deployment_url = f"{metadata_base_url}/deployment"
     deployment_tags_url = f"{metadata_base_url}/deploymentTags"
     cloud_accounts_url = f"{metadata_base_url}/cloudAccounts"
 
+    deployment = fetch_metadata(deployment_url)
+    if deployment is None:
+        return None
+    
     deployment_tags = fetch_metadata(deployment_tags_url)
     if deployment_tags is None:
         return None
 
-    cloud_accounts = fetch_metadata(cloud_accounts_url)
-    if cloud_accounts is None:
+    cloud_account = find_aws_cloudAccount(fetch_metadata(cloud_accounts_url))
+    if cloud_account is None:
         return None
 
     try:
+        dep_id = deployment.get("deployment")["id"]
+        deployer = deployment.get("deployment")["deployer"]
         lab_id = deployment_tags.get("LabID")
         sqs_url = deployment_tags.get("SQS")
-        aws_credentials = find_aws_creds(cloud_accounts)
+        aws_credential = cloud_account.get("credentials"),
+        region = find_aws_region(cloud_account)
 
-        if aws_credentials is None:
+        if aws_credential is None:
             print("AWS API Credentials not found.")
             return None
 
-        aws_secret = aws_credentials.get("secret")
-        aws_key = aws_credentials.get("key")
+        aws_secret = aws_credential.get("secret")
+        aws_key = aws_credential.get("key")
 
         return {
-            "LabID": lab_id,
-            "SQS_URL": sqs_url,
-            "AWS_Secret": aws_secret,
-            "AWS_Key": aws_key
+            "depID": dep_id,
+            "deployer": deployer,
+            "labID": lab_id,
+            "sqsURL": sqs_url,
+            "awsSecret": aws_secret,
+            "awsKey": aws_key,
+            "region": region
         }
     except (KeyError, IndexError) as e:
         print(f"Error extracting metadata: {e}")
         return None
-
-def send_sqs(queue_url, payload):
+    
+def send_sqs(metadata: dict) -> dict|None:
     """
     Send payload to SQS
     """
-    sqs = boto3.client('sqs')
+    try:
+        sqs = boto3.client(
+            'sqs', 
+            region_name=metadata['region'],
+            aws_access_key_id=metadata['awsKey'],
+            aws_secret_access_key=metadata['awsSecret']
+        )
+        message = {
+            'depID': metadata['dep_id'],
+            'deployer': metadata['deployer'],
+            'labID': metadata['lab_id'],
+        }
+    except Exception as e:
+        print(f"Error building SQS client and message: {e}")
+        return None
     try:
         response = sqs.send_message(
-            QueueUrl=queue_url,
-            MessageBody=str(payload)
+            QueueUrl=metadata['sqsURL'],
+            MessageBody=json.dumps(message)
         )
         return response
     except Exception as e:
-        print(f"Error sending message to SQS: {e}")
+        print(f"Error sending SQS message: {e}")
         return None
 
 def main():
