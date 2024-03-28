@@ -2,8 +2,8 @@
 
 # Update the system
 export DEBIAN_FRONTEND=noninteractive
-sudo -E apt-get update -y 
-sudo -E apt-get upgrade -y
+sudo -E apt-get update --yes
+sudo -E NEEDRESTART_MODE=a apt-get upgrade --yes
 
 # Check if Docker is installed, install it if it's not
 if ! command -v docker &> /dev/null
