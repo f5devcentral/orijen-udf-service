@@ -1,28 +1,27 @@
-# Solutions Engineering Template Repository
+# Orijen-UDF-Service
 
-A template repository that contains all required files (LICENSE, SUPPORT, CONTRIBUTING, etc) as outlined in the org standards.  
+This tool pulls and runs a container as a service on a UDF instance (ubuntu 20.02/22.04).
+The target instance needs ``docker`` and a UDF cloud account (AWS) associated with the deployment. 
 
-The sections below are recommended in your project's README.md file.
+## Purpose
 
-## Overview
-
-Provide a short overview of the project.
-
-## Getting Started
-
-Provide a quick example of how to use your code.  This should provide the user with a launch point to quickly see what the project can offer them.
-
-## Installation
-
-Outline the requirements and steps to install this project.
+The tool kicks off automation that provisions accounts and resources in F5 Distributed Cloud.
+UDF is used for authX, scheduling, and virtualized resouces for F5XC labs. 
+This tool and associated "orijen" tools ties the XC account lifecycle to the lifecyle of a UDF deployment.
 
 ## Usage
 
-Outline how the user can use your project and the various features the project offers.
+The tool runs as a systemd service. There is no user interaction required. 
 
-## Development
+## Installation
 
-Outline any requirements to setup a development environment if someone would like to contribute.  You may also link to another file for this information.
+An installer is provided in this repo. 
+Run with ``sudo``. 
+
+## UDF Deployment Tags Needed
+
+- [ ] LabID - Each XC lab has a unique GUID. This is passed into the deployment to determine what resources and permissions should be provisioned.
+- [ ] SQS - This is the SQS queue the Orijen tool is watching. 
 
 ## Support
 
