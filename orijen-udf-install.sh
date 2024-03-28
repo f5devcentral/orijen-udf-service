@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Update the system
-sudo apt-get update
+sudo export DEBIAN_FRONTEND=noninteractive
+sudo apt-get update -y 
 sudo apt-get upgrade -y
 
 # Check if Docker is installed, install it if it's not
