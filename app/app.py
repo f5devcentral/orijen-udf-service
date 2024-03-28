@@ -2,6 +2,7 @@
 import time
 import sys
 import json
+import re
 import requests
 import boto3
 
@@ -25,36 +26,25 @@ def fetch_metadata(url: str, max_retries=5) -> dict|None:
                 print("Max retries reached. Giving up.")
                 return None
 
-def find_aws_metadata(cloud_accounts: dict) -> dict|None:
+def find_aws_cred(cloud_accounts: dict) -> dict|None:
     """
     Find the first cloud account with "type": "AWS_API_CREDENTIAL".
-    Return a dict containing the credential and fastest region.
+    Return a dict containing the cred.
     """
     try:
         for account in cloud_accounts.get("cloudAccounts", []):
             for credential in account.get("credentials", []):
                 if credential.get("type") == "AWS_API_CREDENTIAL":
-                    return {
-                        "aws_cred": credential,
-                        "region": find_aws_region(account)
-                    }
+                    return credential
     except Exception as e:
         return None
 
-def find_aws_region(cloud_account: dict, default_region: str='us-west-2') -> str:
-    """
-    Find the fastest AWS region for this instance
-    """
-    latency_map = {}
-    for region in cloud_account["regions"]:
-        try:
-            url = f"https://dynamodb.{region}.amazonaws.com/ping"
-            r = requests.get(url)
-            latency_map[region] = r.elapsed.total_seconds()
-        except Exception as e:
-            pass
-    fastest_region = [k for k, v in sorted(latency_map.items(), key=lambda p: p[1], reverse=False)]
-    return fastest_region[0] if bool(fastest_region) else default_region
+def find_sqs_region(url: str) -> str|None:
+    try:
+        region = re.search(r'sqs\.([\w-]+)\.amazonaws\.com', url).group(1)
+        return region
+    except (AttributeError) as e:
+        return None
 
 def query_metadata(metadata_base_url: str) -> dict|None:
     """
@@ -75,18 +65,21 @@ def query_metadata(metadata_base_url: str) -> dict|None:
         print("Unable to find deployment tags.")
         return None
 
-    aws_metadata = find_aws_metadata(fetch_metadata(cloud_accounts_url))
-    if aws_metadata is None:
+    aws_credential = find_aws_cred(fetch_metadata(cloud_accounts_url))
+    if aws_credential is None:
         print("Unable to find AWS metadata.")
         return None
-
+    
+    region = find_sqs_region(deployment_tags.get("SQS"))
+    if region is None:
+        print("Unable to find SQS region.")
+        return None
+    
     try:
         dep_id = deployment.get("deployment")["id"]
         deployer = deployment.get("deployment")["deployer"]
         lab_id = deployment_tags.get("LabID")
         sqs_url = deployment_tags.get("SQS")
-
-        aws_credential = aws_metadata.get("aws_cred")
 
         return {
             "depID": dep_id,
@@ -95,7 +88,7 @@ def query_metadata(metadata_base_url: str) -> dict|None:
             "sqsURL": sqs_url,
             "awsSecret": aws_credential.get("secret"),
             "awsKey": aws_credential.get("key"),
-            "region": aws_metadata.get("region")
+            "region": region
         }
     except (KeyError, IndexError) as e:
         print(f"Error extracting metadata: {e}")
