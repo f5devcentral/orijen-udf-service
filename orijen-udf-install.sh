@@ -16,11 +16,16 @@ fi
 sudo systemctl enable docker
 sudo systemctl start docker
 
-# Load the Docker image
-sudo docker pull orijen-udf-service:latest
+# Variable Declarations
+IMAGE=ghcr.io/kreynoldsf5/orijen-udf-service:latest
+SERVICE=orijen-udf.service
+CONTAINER=orijen-udf
+
+# Preliminarily pull the Docker image
+sudo -E docker pull $IMAGE
 
 # Create the systemd service file
-sudo bash -c 'cat > /etc/systemd/system/orijen-udf-service.service <<EOF
+sudo bash -c "cat > /etc/systemd/system/$SERVICE <<EOF
 [Unit]
 Description=Orijen UDF Service
 Requires=docker.service
@@ -29,21 +34,21 @@ After=docker.service
 [Service]
 TimeoutStartSec=0
 Restart=always
-ExecStartPre=-/usr/bin/docker stop orijen-udf-service
-ExecStartPre=-/usr/bin/docker rm orijen-udf-service
-ExecStartPre=/usr/bin/docker pull ghcr.io/kreynoldsf5/orijen-udf-service:latest
-ExecStart=/usr/bin/docker run --rm --name orijen-udf-service orijen-udf-service:latest
-ExecStop=/usr/bin/docker stop orijen-udf-service
+ExecStartPre=-/usr/bin/docker stop $IMAGE
+ExecStartPre=-/usr/bin/docker rm $IMAGE
+ExecStartPre=/usr/bin/docker pull $IMAGE
+ExecStart=/usr/bin/docker run --rm --name $CONTAINER $IMAGE
+ExecStop=/usr/bin/docker stop $CONTAINER
 
 [Install]
 WantedBy=multi-user.target
-EOF'
+EOF"
 
 # Reload systemd manager configuration
 sudo systemctl daemon-reload
 
 # Enable and start your app service
-sudo systemctl enable orijen-udf-service.service
-sudo systemctl start orijen-udf-service.service
+sudo systemctl enable $SERVICE
+sudo systemctl start $SERVICE
 
-echo "Orijen UDF service has been installed and started as a systemd service."
+echo "$SERVICE has been installed and started as a systemd service."
