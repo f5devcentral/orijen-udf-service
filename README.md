@@ -16,12 +16,18 @@ The tool runs as a systemd service. There is no user interaction required.
 ## Installation
 
 An installer is provided in this repo. 
-Run with ``sudo``. 
+Run with ``sudo``.
+
+Once you've inspected [the installer](./orijen-udf-install.sh) and the contents of [the container](./app/app.py) you can run the installer directly.
+
+```shell
+ sudo curl -s https://raw.githubusercontent.com/kreynoldsf5/orijen-udf-service/main/orijen-udf-install.sh | bash
+```
 
 ## UDF Deployment Tags Needed
 
-- [ ] LabID - Each XC lab has a unique GUID. This is passed into the deployment to determine what resources and permissions should be provisioned.
-- [ ] SQS - This is the SQS queue the Orijen tool is watching. 
+- [X] LabID - Each XC lab has a unique GUID. This is passed into the deployment to determine what resources and permissions should be provisioned.
+- [X] SQS - This is the SQS queue the Orijen tool is watching. 
 
 ## Support
 
