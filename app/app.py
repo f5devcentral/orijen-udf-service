@@ -80,7 +80,7 @@ def query_metadata(metadata_base_url: str) -> dict|None:
         deployer = deployment.get("deployment")["deployer"]
         lab_id = deployment_tags.get("LabID")
         sqs_url = deployment_tags.get("SQS")
-
+        
         return {
             "depID": dep_id,
             "deployer": deployer,

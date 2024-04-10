@@ -21,7 +21,7 @@ Run with ``sudo``.
 Once you've inspected [the installer](./orijen-udf-install.sh) and the contents of [the container](./app/app.py) you can run the installer directly.
 
 ```shell
- sudo curl -s https://raw.githubusercontent.com/f5devcentral/orijen-udf-service/main/orijen-udf-install.sh | bash
+ sudo curl -s https://raw.githubusercontent.com/f5devcentral/orijen-udf-service/main/orijen-udf-base-install.sh | bash
 ```
 
 ## UDF Deployment Tags Needed
