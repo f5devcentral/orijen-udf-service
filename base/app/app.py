@@ -3,6 +3,7 @@ import time
 import sys
 import json
 import re
+import atexit
 import requests
 import boto3
 
@@ -94,7 +95,7 @@ def query_metadata(metadata_base_url: str) -> dict|None:
         print(f"Error extracting metadata: {e}")
         return None
     
-def send_sqs(metadata: dict) -> dict|None:
+def send_sqs(metadata: dict, kill: bool=False) -> dict|None:
     """
     Send payload to SQS
     """
@@ -106,9 +107,10 @@ def send_sqs(metadata: dict) -> dict|None:
             aws_secret_access_key=metadata['awsSecret']
         )
         message = {
-            'depID': metadata['depID'],
+            'id': metadata['depID'],
             'deployer': metadata['deployer'],
-            'labID': metadata['labID'],
+            'lab_id': metadata['labID'],
+            'kill': kill
         }
     except Exception as e:
         print(f"Error building SQS client and message: {e}")
@@ -133,6 +135,8 @@ def main():
     if metadata:
         max_retries = 6
         retries = 0
+
+        atexit.register(send_sqs(metadata, True))
 
         while retries < max_retries:
             success = send_sqs(metadata)
