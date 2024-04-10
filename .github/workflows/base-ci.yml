@@ -16,7 +16,7 @@ on:
       - base/**
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: orijen-udf-base
+  IMAGE_NAME: ${{ github.repository }}/orijen-udf-base
   CONTEXT: base
 jobs:
   docker:
@@ -33,7 +33,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
