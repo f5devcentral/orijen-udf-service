@@ -1,18 +1,23 @@
-name: ci
+name: base-ci
 
 on:
   workflow_dispatch:
   push:
     branches:
       - 'main'
+    paths:
+      - base/**
     tags:
       - 'v*'
   pull_request:
     branches:
       - 'main'
+    paths:
+      - base/**
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: orijen-udf-base
+  CONTEXT: base
 jobs:
   docker:
     runs-on: ubuntu-latest
@@ -47,7 +52,7 @@ jobs:
         name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: "{{defaultContext}}:${{env.CONTEXT}}"
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

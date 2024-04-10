@@ -15,9 +15,9 @@ sudo systemctl enable docker
 sudo systemctl start docker
 
 # Variable Declarations
-IMAGE=ghcr.io/kreynoldsf5/orijen-udf-service:latest
-SERVICE=orijen-udf.service
-CONTAINER=orijen-udf
+IMAGE=ghcr.io/f5devcentral/orijen-udf-services:latest
+SERVICE=orijen-udf-base.service
+CONTAINER=orijen-udf-base
 
 # Create the systemd service file
 sudo bash -c "cat > /etc/systemd/system/$SERVICE <<EOF
