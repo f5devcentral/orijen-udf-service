@@ -26,8 +26,10 @@ Once you've inspected [the installer](./orijen-udf-install.sh) and the contents 
 
 ## UDF Deployment Tags Needed
 
+### Base
+
 - [X] LabID - Each XC lab has a unique GUID. This is passed into the deployment to determine what resources and permissions should be provisioned.
-- [X] SQS - This is the SQS queue the Orijen tool is watching.
+- [X] SQS - This is the SQS queue the Orijen Provisioning tool is watching. This value should be specified as a URL.
 
 ## Project Orijen
 

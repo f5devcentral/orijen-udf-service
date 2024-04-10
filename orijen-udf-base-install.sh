@@ -15,7 +15,7 @@ sudo systemctl enable docker
 sudo systemctl start docker
 
 # Variable Declarations
-IMAGE=ghcr.io/f5devcentral/orijen-udf-services:latest
+IMAGE=ghcr.io/f5devcentral/orijen-udf-service/orijen-udf-base:latest
 SERVICE=orijen-udf-base.service
 CONTAINER=orijen-udf-base
 
