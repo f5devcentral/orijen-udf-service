@@ -1,6 +1,6 @@
 # Orijen-UDF-Service
 
-This tool pulls and runs a container as a service on a UDF instance (ubuntu 20.02/22.04).
+This tool pulls and runs a container as a service on an instance (ubuntu 20.02/22.04) in F5's [Universal Demo Environment](https://udf.f5.com/info).
 The target instance needs ``docker`` and a UDF cloud account (AWS) associated with the deployment. 
 
 ## Purpose
@@ -21,13 +21,17 @@ Run with ``sudo``.
 Once you've inspected [the installer](./orijen-udf-install.sh) and the contents of [the container](./app/app.py) you can run the installer directly.
 
 ```shell
- sudo curl -s https://raw.githubusercontent.com/kreynoldsf5/orijen-udf-service/main/orijen-udf-install.sh | bash
+ sudo curl -s https://raw.githubusercontent.com/f5devcentral/orijen-udf-service/main/orijen-udf-install.sh | bash
 ```
 
 ## UDF Deployment Tags Needed
 
 - [X] LabID - Each XC lab has a unique GUID. This is passed into the deployment to determine what resources and permissions should be provisioned.
-- [X] SQS - This is the SQS queue the Orijen tool is watching. 
+- [X] SQS - This is the SQS queue the Orijen tool is watching.
+
+## Project Orijen
+
+Project [Orijen](https://www.orijenpetfoods.com/) is a collection of tools used by the F5 Sales organization to provide automation and tooling around the F5 Distributed Cloud platform.
 
 ## Support
 
