@@ -136,7 +136,7 @@ def main():
         max_retries = 6
         retries = 0
 
-        atexit.register(send_sqs(metadata, True))
+        atexit.register(send_sqs, metadata, True)
 
         while retries < max_retries:
             success = send_sqs(metadata)
