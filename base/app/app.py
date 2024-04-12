@@ -89,7 +89,7 @@ def find_sqs_region(url: str) -> str|None:
     try:
         region = re.search(r'sqs\.([\w-]+)\.amazonaws\.com', url).group(1)
         return region
-    except (AttributeError) as e:
+    except AttributeError as e:
         return None
 
 def query_metadata(metadata_base_url: str) -> dict|None:
