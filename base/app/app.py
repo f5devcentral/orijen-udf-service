@@ -4,8 +4,20 @@ import sys
 import json
 import re
 import atexit
+import base64
 import requests
 import boto3
+
+def b64_lazy_decode(s: str) -> str|None:
+    """
+    Add padding (=) back and decode.
+    Necessary as UDF user tags only support alphanumeric characters
+    """
+    try:
+        this = base64.b64decode(s + "=" * ((4 - len(s)) % 4))
+        return this.decode('utf-8').rstrip('\n')
+    except Exception as e:
+        return None
 
 def fetch_metadata(url: str, max_retries=5) -> dict|None:
     """
@@ -39,8 +51,41 @@ def find_aws_cred(cloud_accounts: dict) -> dict|None:
                     return credential
     except Exception as e:
         return None
+    
+def find_user_tags(meta_tags: list) -> dict|None:
+    """
+    Find user_tags from instance metadata.
+    Return a dict with all b64 decoded tags.
+    """
+    try:
+        all_tags = meta_tags[0].get("userTags", [])
+        tags = ["LabID", "SQS_r", "SQS_q"]
+        user_tags = {}
+        tag_list = [t for t in all_tags if t.get("name") in tags]
+        for tag in tag_list:
+            user_tags[tag["name"]] = b64_lazy_decode(tag["value"])
+    except Exception as e:
+        return None
+    if len(user_tags) == 3:
+        return user_tags
+    else:
+        return None
+
+def build_sqs_url(region: str, q: str) -> str|None:
+    """
+    Build a complete SQS queue URL from the pieces in user_tags
+    """
+    try:
+        url = f"https://sqs/{region}.amazonaws.com/{q}"
+        return url
+    except Exception as e:
+        return None
 
 def find_sqs_region(url: str) -> str|None:
+    """
+    Determine SQS region from URL.
+    Boto3 needs this regardless of region in URL.
+    """
     try:
         region = re.search(r'sqs\.([\w-]+)\.amazonaws\.com', url).group(1)
         return region
@@ -53,7 +98,7 @@ def query_metadata(metadata_base_url: str) -> dict|None:
     Retrieve AWS secret, AWS key, SQS URL, Lab GUID, deployer, deploy ID, and region.
     """
     deployment_url = f"{metadata_base_url}/deployment"
-    deployment_tags_url = f"{metadata_base_url}/deploymentTags"
+    user_tags_url = f"{metadata_base_url}/userTags/name/XC/value/true"
     cloud_accounts_url = f"{metadata_base_url}/cloudAccounts"
 
     deployment = fetch_metadata(deployment_url)
@@ -61,27 +106,23 @@ def query_metadata(metadata_base_url: str) -> dict|None:
         print("Unable to find deployment data.")
         return None
     
-    deployment_tags = fetch_metadata(deployment_tags_url)
-    if deployment_tags is None:
-        print("Unable to find deployment tags.")
+    user_tags = find_user_tags(fetch_metadata(user_tags_url))
+    if user_tags is None:
+        print("Unable to find user tags.")
         return None
 
     aws_credential = find_aws_cred(fetch_metadata(cloud_accounts_url))
     if aws_credential is None:
         print("Unable to find AWS metadata.")
         return None
-    
-    region = find_sqs_region(deployment_tags.get("SQS"))
-    if region is None:
-        print("Unable to find SQS region.")
-        return None
-    
+       
     try:
         dep_id = deployment.get("deployment")["id"]
         deployer = deployment.get("deployment")["deployer"]
-        lab_id = deployment_tags.get("LabID")
-        sqs_url = deployment_tags.get("SQS")
-        
+        lab_id = user_tags.get("LabID")
+        sqs_url = build_sqs_url(user_tags.get("SQS_r"), user_tags.get("SQS_q"))
+        region = find_sqs_region(sqs_url)
+   
         return {
             "depID": dep_id,
             "deployer": deployer,
