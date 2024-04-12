@@ -24,12 +24,14 @@ Once you've inspected [the installer](./orijen-udf-install.sh) and the contents 
  sudo curl -s https://raw.githubusercontent.com/f5devcentral/orijen-udf-service/main/orijen-udf-base-install.sh | bash
 ```
 
-## UDF Deployment Tags Needed
+## UDF User Tags Needed
 
-### Base
+Please see [here](./UserTags.md) for formatting information.
 
-- [X] LabID - Each XC lab has a unique GUID. This is passed into the deployment to determine what resources and permissions should be provisioned.
-- [X] SQS - This is the SQS queue the Orijen Provisioning tool is watching. This value should be specified as a URL.
+- [X] LabID - Each XC lab has a unique GUID. This is passed into the tool to determine what resources and permissions should be provisioned.
+- [X] SQS_q - This is the SQS queue the Orijen provisioning tool is watching. 
+- [X] SQS_r - This is the SQS region.
+- [X] XC - This is used to identify the instance running the tool. It's value should be "true".
 
 ## Project Orijen
 
