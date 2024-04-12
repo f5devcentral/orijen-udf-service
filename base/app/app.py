@@ -4,7 +4,7 @@ import sys
 import json
 import re
 import atexit
-import base64
+import base64   
 import requests
 import boto3
 
@@ -76,7 +76,7 @@ def build_sqs_url(region: str, q: str) -> str|None:
     Build a complete SQS queue URL from the pieces in user_tags
     """
     try:
-        url = f"https://sqs/{region}.amazonaws.com/{q}"
+        url = f"https://sqs.{region}.amazonaws.com/{q}"
         return url
     except Exception as e:
         return None
@@ -100,29 +100,24 @@ def query_metadata(metadata_base_url: str) -> dict|None:
     deployment_url = f"{metadata_base_url}/deployment"
     user_tags_url = f"{metadata_base_url}/userTags/name/XC/value/true"
     cloud_accounts_url = f"{metadata_base_url}/cloudAccounts"
-
     deployment = fetch_metadata(deployment_url)
     if deployment is None:
         print("Unable to find deployment data.")
         return None
-    
     user_tags = find_user_tags(fetch_metadata(user_tags_url))
     if user_tags is None:
         print("Unable to find user tags.")
         return None
-
     aws_credential = find_aws_cred(fetch_metadata(cloud_accounts_url))
     if aws_credential is None:
         print("Unable to find AWS metadata.")
         return None
-       
     try:
         dep_id = deployment.get("deployment")["id"]
         deployer = deployment.get("deployment")["deployer"]
         lab_id = user_tags.get("LabID")
         sqs_url = build_sqs_url(user_tags.get("SQS_r"), user_tags.get("SQS_q"))
         region = find_sqs_region(sqs_url)
-   
         return {
             "depID": dep_id,
             "deployer": deployer,
