@@ -98,7 +98,7 @@ def query_metadata(metadata_base_url: str) -> dict|None:
     Retrieve AWS secret, AWS key, SQS URL, Lab GUID, deployer, deploy ID, and region.
     """
     deployment_url = f"{metadata_base_url}/deployment"
-    user_tags_url = f"{metadata_base_url}/userTags/name/XC/value/true"
+    user_tags_url = f"{metadata_base_url}/userTags/name/XC/value/runner"
     cloud_accounts_url = f"{metadata_base_url}/cloudAccounts"
     deployment = fetch_metadata(deployment_url)
     if deployment is None:

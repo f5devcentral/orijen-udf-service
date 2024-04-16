@@ -31,7 +31,7 @@ Please see [here](./UserTags.md) for formatting information.
 - [X] LabID - Each XC lab has a unique GUID. This is passed into the tool to determine what resources and permissions should be provisioned.
 - [X] SQS_q - This is the SQS queue the Orijen provisioning tool is watching. 
 - [X] SQS_r - This is the SQS region.
-- [X] XC - This is used to identify the instance running the tool. It's value should be "true".
+- [X] XC - This is used to identify the instance running the tool. It's value should be "runner".
 
 ## Project Orijen
 
