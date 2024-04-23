@@ -15,7 +15,7 @@ The tool runs as a systemd service. There is no user interaction required.
 
 ## Installation
 
-An installer is provided in this repo. 
+Installers are provided in this repo. 
 Run with ``sudo``.
 
 Once you've inspected [the installer](./orijen-udf-install.sh) and the contents of [the container](./app/app.py) you can run the installer directly.
@@ -29,9 +29,7 @@ Once you've inspected [the installer](./orijen-udf-install.sh) and the contents 
 Please see [here](./UserTags.md) for formatting information.
 
 - [X] LabID - Each XC lab has a unique GUID. This is passed into the tool to determine what resources and permissions should be provisioned.
-- [X] SQS_q - This is the SQS queue the Orijen provisioning tool is watching. 
-- [X] SQS_r - This is the SQS region.
-- [X] XC - This is used to identify the instance running the tool. It's value should be "runner".
+- [X] XC - This is used to identify the instance running the tool ("runner") and/or the CE needing to be registered ("CE").
 
 ## Project Orijen
 
