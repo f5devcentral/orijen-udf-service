@@ -55,12 +55,17 @@ def find_user_tags(meta_tags: list, tags: list) -> dict|None:
     Find user_tags from instance metadata.
     Return a dict with all b64 decoded tags needed for this service.
     """
+    print("DEBUG")
+    print(f"meta_tags: {meta_tags}")
+    print(f"tags: {tags}")
     try:
         all_tags = meta_tags[0].get("userTags", [])
+        print(f"all_tags: {all_tags}")
         user_tags = {}
         tag_list = [t for t in all_tags if t.get("name") in tags]
         for tag in tag_list:
             user_tags[tag["name"]] = tag["value"]
+        print(f"user_tags: {user_tags}")
     except Exception as e:
         return None
     if len(user_tags) == len(tags):
