@@ -17,7 +17,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}/orijen-udf-site
-  CONTEXT: base
+  CONTEXT: site
 jobs:
   docker:
     runs-on: ubuntu-latest
