@@ -53,7 +53,6 @@ def find_aws_cred(cloud_accounts: dict) -> dict|None:
 def find_user_tags(meta_tags: list, tags: list) -> dict|None:
     """
     Find user_tags from instance metadata.
-    Return a dict with all b64 decoded tags needed for this service.
     """
     print("DEBUG")
     print(f"meta_tags: {meta_tags}")

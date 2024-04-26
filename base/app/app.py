@@ -52,23 +52,22 @@ def find_aws_cred(cloud_accounts: dict) -> dict|None:
     except Exception as e:
         return None
     
-def find_user_tags(meta_tags: list) -> dict|None:
+def find_user_tags(meta_tags: list, tags: list) -> dict|None:
     """
     Find user_tags from instance metadata.
-    Return a dict with all b64 decoded tags.
     """
     try:
         all_tags = meta_tags[0].get("userTags", [])
-        tags = ["LabID", "SQS_r", "SQS_q"]
         user_tags = {}
         tag_list = [t for t in all_tags if t.get("name") in tags]
         for tag in tag_list:
-            user_tags[tag["name"]] = b64_lazy_decode(tag["value"])
+            user_tags[tag["name"]] = tag["value"]
     except Exception as e:
         return None
-    if len(user_tags) == 3:
+    if len(user_tags) == len(tags):
         return user_tags
     else:
+        print(f"Unable to find User Tags.")
         return None
 
 def build_sqs_url(region: str, q: str) -> str|None:
