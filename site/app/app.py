@@ -5,6 +5,9 @@ import base64
 import requests
 import boto3
 import yaml
+import urllib3
+
+urllib3.disable_warnings()
 
 def b64_lazy_decode(s: str) -> str|None:
     """
