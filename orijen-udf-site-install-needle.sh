@@ -31,8 +31,7 @@ After=docker.service
 
 [Service]
 TimeoutStartSec=0
-Restart=no                    
-RuntimeMaxSec=600
+Restart=always
 ExecStartPre=-/usr/bin/docker stop $CONTAINER
 ExecStartPre=-/usr/bin/docker rm $CONTAINER
 ExecStartPre=/usr/bin/docker pull $IMAGE
