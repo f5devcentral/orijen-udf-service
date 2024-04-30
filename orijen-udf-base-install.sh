@@ -1,26 +1,29 @@
 #!/bin/bash
 
-# Update apt
-sudo DEBIAN_FRONTEND=noninteractive apt-get update --yes
+# Ensure the script is run with root privileges
+if [ "$EUID" -ne 0 ]; then
+    echo "Please run as root"
+    exit
+fi
 
-# Check if Docker is installed, install it if it's not
-if ! command -v docker &> /dev/null
-then
-    echo "Docker could not be found, installing..."
-    sudo apt-get install -y docker.io
+# Check for docker and install if it's missing
+if ! command -v docker &> /dev/null; then
+    echo "Docker could not be found, updating repositories and installing..."
+    apt-get update --quiet
+    apt-get install --quiet --yes docker.io
 fi
 
 # Enable and start Docker
-sudo systemctl enable docker
-sudo systemctl start docker
+systemctl enable docker
+systemctl start docker
 
 # Variable Declarations
-IMAGE=ghcr.io/f5devcentral/orijen-udf-service/orijen-udf-base:latest
-SERVICE=orijen-udf-base.service
-CONTAINER=orijen-udf-base
+IMAGE="ghcr.io/f5devcentral/orijen-udf-service/orijen-udf-base:dev"
+SERVICE="orijen-udf-base.service"
+CONTAINER="orijen-udf-base"
 
 # Create the systemd service file
-sudo bash -c "cat > /etc/systemd/system/$SERVICE <<EOF
+cat <<EOF >/etc/systemd/system/$SERVICE
 [Unit]
 Description=Orijen UDF Service
 Requires=docker.service
@@ -29,21 +32,20 @@ After=docker.service
 [Service]
 TimeoutStartSec=0
 Restart=always
-ExecStartPre=-/usr/bin/docker stop $IMAGE
-ExecStartPre=-/usr/bin/docker rm $IMAGE
+ExecStartPre=-/usr/bin/docker stop $CONTAINER
+ExecStartPre=-/usr/bin/docker rm $CONTAINER
 ExecStartPre=/usr/bin/docker pull $IMAGE
 ExecStart=/usr/bin/docker run --rm --name $CONTAINER $IMAGE
 ExecStop=/usr/bin/docker stop $CONTAINER
 
 [Install]
 WantedBy=multi-user.target
-EOF"
+EOF
 
 # Reload systemd manager configuration
-sudo systemctl daemon-reload
+systemctl daemon-reload
 
-# Enable and start your app service
-sudo systemctl enable $SERVICE
-sudo systemctl start $SERVICE
+# Enable the service
+systemctl enable $SERVICE
 
-echo "$SERVICE has been installed and started as a systemd service."
+echo "$SERVICE has been installed and enabled."
