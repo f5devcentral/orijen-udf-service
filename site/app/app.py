@@ -57,17 +57,12 @@ def find_user_tags(meta_tags: list, tags: list) -> dict|None:
     """
     Find user_tags from instance metadata.
     """
-    print("DEBUG")
-    print(f"meta_tags: {meta_tags}")
-    print(f"tags: {tags}")
     try:
         all_tags = meta_tags[0].get("userTags", [])
-        print(f"all_tags: {all_tags}")
         user_tags = {}
         tag_list = [t for t in all_tags if t.get("name") in tags]
         for tag in tag_list:
             user_tags[tag["name"]] = tag["value"]
-        print(f"user_tags: {user_tags}")
     except Exception as e:
         return None
     if len(user_tags) == len(tags):
@@ -181,7 +176,7 @@ def main():
             print("Successfully sent CE registration.")
             sys.exit(0)
         else:
-          print(f"Unable to send CE registration. Exiting.")
+          print("Unable to send CE registration. Exiting.")
           sys.exit(1)
     else:
         print("Failed to retrieve needed parameters. Exiting.")
