@@ -4,7 +4,8 @@ import sys
 import json
 import re
 import atexit
-import base64   
+import base64  
+import yaml 
 import requests
 import boto3
 
@@ -91,6 +92,39 @@ def find_sqs_region(url: str) -> str|None:
     except AttributeError as e:
         return None
 
+def query_metadata(metadata_base_url: str="http://metadata.udf") -> dict|None:
+    """
+    Query metadata service.
+    Retrieve LabID, DepID, AWS secret, AWS key from various metadata endpoints.
+    """
+    #Deployment Info
+    deployment = fetch_metadata(f"{metadata_base_url}/deployment")
+    if deployment is None:
+        print("Unable to find Deployment Metadata.")
+        return None
+    #Runner Info
+    runner_user_tags = find_user_tags(fetch_metadata(f"{metadata_base_url}/userTags/name/XC/value/runner"), ["LabID"])
+    if runner_user_tags is None:
+        print("Unable to find Runner Metadata.")
+        return None
+    #AWS Info
+    aws_credential = find_aws_cred(fetch_metadata(f"{metadata_base_url}/cloudAccounts"))
+    if aws_credential is None:
+        print("Unable to find AWS Metadata.")
+        return None
+    #
+    try:
+        return {
+            "depID": deployment.get("deployment")["id"],
+            "deplpoyer": deployment.get("deployment")["deployer"],
+            "labID": runner_user_tags.get("LabID"),
+            "awsSecret": aws_credential.get("secret"),
+            "awsKey": aws_credential.get("key")
+        }
+    except (KeyError, IndexError) as e:
+        print(f"Error extracting metadata: {e}")
+        return None
+    
 def query_metadata(metadata_base_url: str) -> dict|None:
     """
     Query metadata service.
@@ -103,7 +137,7 @@ def query_metadata(metadata_base_url: str) -> dict|None:
     if deployment is None:
         print("Unable to find deployment data.")
         return None
-    user_tags = find_user_tags(fetch_metadata(user_tags_url))
+    user_tags = find_user_tags(fetch_metadata(user_tags_url), ["LabID"])
     if user_tags is None:
         print("Unable to find user tags.")
         return None
@@ -128,6 +162,43 @@ def query_metadata(metadata_base_url: str) -> dict|None:
         }
     except (KeyError, IndexError) as e:
         print(f"Error extracting metadata: {e}")
+        return None
+    
+def get_lab_info(metadata: dict) -> dict|None:
+    """
+    Get Lab Info from S3.
+    """
+    try:
+        client = boto3.client(
+            's3',
+            region_name='us-east-1',
+            aws_access_key_id=metadata['awsKey'],
+            aws_secret_access_key=metadata['awsSecret']
+        )
+        obj = client.get_object(Bucket='orijen-udf-lab-registry', Key=f"{metadata['labID']}.yaml")
+        data = obj['Body'].read().decode('utf-8')
+        info = yaml.safe_load(data)
+        return info
+    except Exception as e:
+        print(f"Error retrieving lab info: {e}")
+        return None
+    
+def build_sqs_meta(metadata: dict, lab_info: dict) -> dict|None:
+    """
+    Build SQS metadata.
+    """
+    try:
+        return {
+            "depID": metadata['depID'],
+            "deployer": metadata['deployer'],
+            "labID": metadata['labID'],
+            "sqsURL": lab_info['sqsURL'],
+            "region": find_sqs_region(lab_info['sqsURL']),
+            "awsKey": metadata['awsKey'],
+            "awsSecret": metadata['awsSecret']
+        }
+    except Exception as e:
+        print(f"Error building SQS metadata: {e}")
         return None
     
 def send_sqs(metadata: dict, kill: bool=False) -> dict|None:
@@ -164,17 +235,20 @@ def main():
     """
     Main Function
     """
-    metadata_base_url = "http://metadata.udf"
-    metadata = query_metadata(metadata_base_url)
+    metadata = query_metadata()
+    labInfo = get_lab_info(metadata)
 
-    if metadata:
+    sqs_meta = build_sqs_meta(metadata, labInfo)
+
+
+    if sqs_meta:
         max_retries = 6
         retries = 0
 
-        atexit.register(send_sqs, metadata, True)
+        atexit.register(send_sqs, sqs_meta, True)
 
         while retries < max_retries:
-            success = send_sqs(metadata)
+            success = send_sqs(sqs_meta)
             if success:
                 print("Message sent to SQS successfully.")
                 retries = 0
