@@ -68,7 +68,7 @@ def find_user_tags(meta_tags: list, tags: list) -> dict|None:
     if len(user_tags) == len(tags):
         return user_tags
     else:
-        print(f"Unable to find User Tags.")
+        print("Unable to find User Tags.")
         return None
 
 def build_sqs_url(region: str, q: str) -> str|None:
