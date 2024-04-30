@@ -37,7 +37,7 @@ ExecStartPre=-/usr/bin/docker stop $CONTAINER
 ExecStartPre=-/usr/bin/docker rm $CONTAINER
 ExecStartPre=/usr/bin/docker pull $IMAGE
 ExecStart=/usr/bin/docker run --rm --name $CONTAINER $IMAGE
-ExecStop=/usr/bin/docker stop $CONTAINER
+ExecStop=-/usr/bin/docker stop $CONTAINER
 
 [Install]
 WantedBy=multi-user.target
