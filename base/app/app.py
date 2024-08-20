@@ -29,6 +29,7 @@ def b64_lazy_decode(s: str) -> str|None:
         this = base64.b64decode(s + "=" * ((4 - len(s)) % 4))
         return this.decode('utf-8').rstrip('\n')
     except Exception as e:
+        print(f"Error decoding base64: {e}")
         return None
 
 def fetch_metadata(url: str, max_retries=5) -> dict|None:
