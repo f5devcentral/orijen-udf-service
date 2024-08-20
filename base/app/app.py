@@ -21,8 +21,8 @@ def run_flask(app):
 
 def save_state(file, state):
     os.makedirs(os.path.dirname(state_base + file), exist_ok=True)
-    with open(state_base+ file, 'w') as f:
-        json.dump(state, f)
+    with open(state_base + file, 'w') as f:
+        f.write(state)
 
 def load_state(file):
     try:
