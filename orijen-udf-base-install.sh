@@ -18,7 +18,7 @@ systemctl enable docker
 systemctl start docker
 
 # Variable Declarations
-IMAGE="ghcr.io/f5devcentral/orijen-udf-service/orijen-udf-base:dev"
+IMAGE="ghcr.io/f5devcentral/orijen-udf-service/orijen-udf-base:petname-api"
 SERVICE="orijen-udf-base.service"
 CONTAINER="orijen-udf-base"
 
@@ -35,8 +35,9 @@ Restart=always
 ExecStartPre=-/usr/bin/docker stop $CONTAINER
 ExecStartPre=-/usr/bin/docker rm $CONTAINER
 ExecStartPre=/usr/bin/docker pull $IMAGE
-ExecStart=/usr/bin/docker run --rm --name $CONTAINER $IMAGE
+ExecStart=/usr/bin/docker run -p 5123:5123 --rm --name $CONTAINER $IMAGE
 ExecStop=/usr/bin/docker stop $CONTAINER
+StateDirectory=$CONTAINER
 
 [Install]
 WantedBy=multi-user.target

@@ -12,13 +12,28 @@ import boto3
 import petname
 from flask import Flask, jsonify
 
+state_base = "/var/lib/private/orijen-udf-base/"
+
 def run_flask(app):
     """Function to run the Flask app on a separate thread."""
     app.run(host='0.0.0.0', port=5123)
 
+def save_state(file, state):
+    with open(file, 'w') as f:
+        json.dump(state, f)
+
+def load_state(file):
+    try:
+        with open(file, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
+
 def generate_petname():
     """Generates a pet name in the format 'adjective-animal'."""
-    return petname.Generate()
+    name = petname.Generate()
+    save_state(state_base + "petname.json", name)
+    return name
 
 def b64_lazy_decode(s: str) -> str|None:
     """
@@ -40,7 +55,7 @@ def fetch_metadata(url: str, max_retries=5) -> dict|None:
     retry_delay = 1
     for attempt in range(max_retries):
         try:
-            response = requests.get(url)
+            response = requests.get(url, timeout=5)
             response.raise_for_status()
             return response.json()
         except requests.RequestException as e:
@@ -212,10 +227,14 @@ def main():
     """
     Main Function
     """
+   
     metadata = query_metadata()
     labInfo = get_lab_info(metadata)
     sqsMeta = build_sqs_meta(metadata, labInfo)
-    petName = generate_petname()
+
+    petName = load_state(state_base + "petname.json")
+    if not petName:
+        petName = generate_petname()
 
     app = Flask(__name__)
 
