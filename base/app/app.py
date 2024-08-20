@@ -1,5 +1,6 @@
 """Module fetching metadata and sending to SQS"""
 from threading import Thread
+import os
 import time
 import sys
 import json
@@ -12,13 +13,12 @@ import boto3
 import petname
 from flask import Flask, jsonify
 
-state_base = "/var/lib/private/orijen-udf-base/"
-
 def run_flask(app):
     """Function to run the Flask app on a separate thread."""
     app.run(host='0.0.0.0', port=5123)
 
 def save_state(file, state):
+    os.makedirs(os.path.dirname(file), exist_ok=True)
     with open(file, 'w') as f:
         json.dump(state, f)
 
@@ -30,7 +30,7 @@ def load_state(file):
         return {}
 
 def generate_petname():
-    """Generates a pet name in the format 'adjective-animal'."""
+    """Generates a pet name in the format 'adjective-animal'"""
     name = petname.Generate()
     save_state(state_base + "petname.json", name)
     return name
@@ -227,6 +227,7 @@ def main():
     """
     Main Function
     """
+    state_base = "/var/lib/private/orijen-udf-base/"
    
     metadata = query_metadata()
     labInfo = get_lab_info(metadata)
