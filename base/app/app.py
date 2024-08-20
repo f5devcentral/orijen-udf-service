@@ -14,7 +14,7 @@ from flask import Flask, jsonify
 
 def run_flask(app):
     """Function to run the Flask app on a separate thread."""
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5123)
 
 def generate_petname():
     """Generates a pet name in the format 'adjective-animal'."""
