@@ -5,6 +5,6 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 COPY app .
 RUN pip install --no-cache-dir -r requirements.txt
-EXPOSE 5123/tcp
 
+EXPOSE 5123
 CMD ["python", "./app.py"]
