@@ -1,4 +1,5 @@
 """Module fetching metadata and sending to SQS"""
+from threading import Thread
 import time
 import sys
 import json
@@ -8,6 +9,16 @@ import base64
 import yaml 
 import requests
 import boto3
+import petname
+from flask import Flask, jsonify
+
+def run_flask(app):
+    """Function to run the Flask app on a separate thread."""
+    app.run(host='0.0.0.0', port=5000)
+
+def generate_petname():
+    """Generates a pet name in the format 'adjective-animal'."""
+    return petname.Generate()
 
 def b64_lazy_decode(s: str) -> str|None:
     """
@@ -51,6 +62,7 @@ def find_aws_cred(cloud_accounts: dict) -> dict|None:
                 if credential.get("type") == "AWS_API_CREDENTIAL":
                     return credential
     except Exception as e:
+        print(f"Unable to find AWS Creds: {e}")
         return None
     
 def find_user_tags(meta_tags: list, tags: list) -> dict|None:
@@ -64,6 +76,7 @@ def find_user_tags(meta_tags: list, tags: list) -> dict|None:
         for tag in tag_list:
             user_tags[tag["name"]] = tag["value"]
     except Exception as e:
+        print(f"Unable to find User Tags: {e}")
         return None
     if len(user_tags) == len(tags):
         return user_tags
@@ -79,6 +92,7 @@ def build_sqs_url(region: str, q: str) -> str|None:
         url = f"https://sqs.{region}.amazonaws.com/{q}"
         return url
     except Exception as e:
+        print(f"Unable to build SQS URL: {e}")
         return None
 
 def find_sqs_region(url: str) -> str|None:
@@ -90,6 +104,7 @@ def find_sqs_region(url: str) -> str|None:
         region = re.search(r'sqs\.([\w-]+)\.amazonaws\.com', url).group(1)
         return region
     except AttributeError as e:
+        print(f"Unable to find SQS Region: {e}")
         return None
 
 def query_metadata(metadata_base_url: str="http://metadata.udf") -> dict|None:
@@ -125,7 +140,7 @@ def query_metadata(metadata_base_url: str="http://metadata.udf") -> dict|None:
         print(f"Error extracting metadata: {e}")
         return None
         
-def get_lab_info(metadata: dict) -> dict|None:
+def get_lab_info(meta: dict) -> dict|None:
     """
     Get Lab Info from S3.
     """
@@ -133,10 +148,10 @@ def get_lab_info(metadata: dict) -> dict|None:
         client = boto3.client(
             's3',
             region_name='us-east-1',
-            aws_access_key_id=metadata['awsKey'],
-            aws_secret_access_key=metadata['awsSecret']
+            aws_access_key_id=meta['awsKey'],
+            aws_secret_access_key=meta['awsSecret']
         )
-        obj = client.get_object(Bucket='orijen-udf-lab-registry', Key=f"{metadata['labID']}.yaml")
+        obj = client.get_object(Bucket='orijen-udf-lab-registry', Key=f"{meta['labID']}.yaml")
         data = obj['Body'].read().decode('utf-8')
         info = yaml.safe_load(data)
         return info
@@ -144,39 +159,39 @@ def get_lab_info(metadata: dict) -> dict|None:
         print(f"Error retrieving lab info: {e}")
         return None
     
-def build_sqs_meta(metadata: dict, lab_info: dict) -> dict|None:
+def build_sqs_meta(meta: dict, lab_info: dict) -> dict|None:
     """
     Build SQS metadata.
     """
     try:
         return {
-            "depID": metadata['depID'],
-            "deployer": metadata['deployer'],
-            "labID": metadata['labID'],
+            "depID": meta['depID'],
+            "deployer": meta['deployer'],
+            "labID": meta['labID'],
             "sqsURL": lab_info['sqsURL'],
             "region": find_sqs_region(lab_info['sqsURL']),
-            "awsKey": metadata['awsKey'],
-            "awsSecret": metadata['awsSecret']
+            "awsKey": meta['awsKey'],
+            "awsSecret": meta['awsSecret']
         }
     except Exception as e:
         print(f"Error building SQS metadata: {e}")
         return None
     
-def send_sqs(metadata: dict, kill: bool=False) -> dict|None:
+def send_sqs(meta: dict, kill: bool=False) -> dict|None:
     """
     Send payload to SQS
     """
     try:
         sqs = boto3.client(
             'sqs', 
-            region_name=metadata['region'],
-            aws_access_key_id=metadata['awsKey'],
-            aws_secret_access_key=metadata['awsSecret']
+            region_name=meta['region'],
+            aws_access_key_id=meta['awsKey'],
+            aws_secret_access_key=meta['awsSecret']
         )
         message = {
-            'id': metadata['depID'],
-            'deployer': metadata['deployer'],
-            'lab_id': metadata['labID'],
+            'id': meta['depID'],
+            'deployer': meta['deployer'],
+            'lab_id': meta['labID'],
             'kill': kill
         }
     except Exception as e:
@@ -184,32 +199,57 @@ def send_sqs(metadata: dict, kill: bool=False) -> dict|None:
         return None
     try:
         response = sqs.send_message(
-            QueueUrl=metadata['sqsURL'],
+            QueueUrl=meta['sqsURL'],
             MessageBody=json.dumps(message)
         )
         return response
     except Exception as e:
         print(f"Error sending SQS message: {e}")
         return None
-
+    
 def main():
     """
     Main Function
     """
     metadata = query_metadata()
     labInfo = get_lab_info(metadata)
+    sqsMeta = build_sqs_meta(metadata, labInfo)
+    petName = generate_petname()
 
-    sqs_meta = build_sqs_meta(metadata, labInfo)
+    app = Flask(__name__)
 
+    @app.route('/status', methods=['GET'])
+    def status():
+        return jsonify({"status": "running"}), 200
 
-    if sqs_meta:
+    @app.route('/metadata', methods=['GET'])
+    def get_metadata():
+        return jsonify(metadata), 200
+
+    @app.route('/labinfo', methods=['GET'])
+    def get_labinfo():
+        return jsonify(labInfo), 200
+
+    @app.route('/sqs_meta', methods=['GET'])
+    def get_sqs_meta():
+        return jsonify(sqsMeta), 200
+    
+    @app.route('/petname', methods=['GET'])
+    def get_petname():
+        return jsonify({"petname": petName}), 200
+
+    flask_thread = Thread(target=run_flask, args=(app,))
+    flask_thread.daemon = True
+    flask_thread.start()
+
+    if sqsMeta:
         max_retries = 6
         retries = 0
 
-        atexit.register(send_sqs, sqs_meta, True)
+        atexit.register(send_sqs, sqsMeta, True)
 
         while retries < max_retries:
-            success = send_sqs(sqs_meta)
+            success = send_sqs(sqsMeta)
             if success:
                 print("Message sent to SQS successfully.")
                 retries = 0
