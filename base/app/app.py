@@ -244,13 +244,13 @@ def main():
     @app.route('/')
     def index():
         """Return a list of all API endpoints."""
-        endpoints = {}
+        endpoints = []
         for rule in app.url_map.iter_rules():
             if rule.endpoint != 'static':
-                endpoints[rule.rule] = {
-                    "methods": list(rule.methods),
-                    "endpoint": rule.endpoint
-                }
+                endpoints.append({
+                    "route": rule.rule,
+                    "methods": list(rule.methods)
+                })
         return jsonify(endpoints)
 
     @app.route('/status', methods=['GET'])
