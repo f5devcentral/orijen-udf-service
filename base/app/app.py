@@ -29,14 +29,14 @@ def load_state(file):
     """Load state from a file."""
     try:
         with open(state_base + file, 'r', encoding="utf-8") as f:
-            return json.load(f)
+            return f.read().strip()
     except FileNotFoundError:
         return {}
 
 def generate_petname():
     """Generates a pet name in the format 'adjective-animal'"""
     name = petname.Generate()
-    save_state(state_base + "petname.json", name)
+    save_state(state_base + "petname", name)
     return name
 
 def b64_lazy_decode(s: str) -> str|None:
@@ -235,7 +235,7 @@ def main():
     labInfo = get_lab_info(metadata)
     sqsMeta = build_sqs_meta(metadata, labInfo)
 
-    petName = load_state("petname.json")
+    petName = load_state("petname")
     if not petName:
         petName = generate_petname()
 
