@@ -241,6 +241,18 @@ def main():
 
     app = Flask(__name__)
 
+    @app.route('/')
+    def index():
+        """Return a list of all API endpoints."""
+        endpoints = {}
+        for rule in app.url_map.iter_rules():
+            if rule.endpoint != 'static':
+                endpoints[rule.rule] = {
+                    "methods": list(rule.methods),
+                    "endpoint": rule.endpoint
+                }
+        return jsonify(endpoints)
+
     @app.route('/status', methods=['GET'])
     def status():
         return jsonify({"status": "running"}), 200
