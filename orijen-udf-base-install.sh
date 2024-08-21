@@ -35,7 +35,7 @@ Restart=always
 ExecStartPre=-/usr/bin/docker stop $CONTAINER
 ExecStartPre=-/usr/bin/docker rm $CONTAINER
 ExecStartPre=/usr/bin/docker pull $IMAGE
-ExecStart=/usr/bin/docker run -p 5123:5123 --rm --name $CONTAINER $IMAGE
+ExecStart=/usr/bin/docker run -p 5123:5123 -v $CONTAINER:/var/lib/state --rm --name $CONTAINER $IMAGE
 ExecStop=/usr/bin/docker stop $CONTAINER
 StateDirectory=$CONTAINER
 

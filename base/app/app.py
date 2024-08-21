@@ -13,20 +13,22 @@ import boto3
 import petname
 from flask import Flask, jsonify
 
-state_base = "/var/lib/private/orijen-udf-base/"
+state_base = "/var/lib/state/"
 
 def run_flask(app):
     """Function to run the Flask app on a separate thread."""
     app.run(host='0.0.0.0', port=5123)
 
 def save_state(file, state):
+    """Save state to a file."""
     os.makedirs(os.path.dirname(state_base + file), exist_ok=True)
-    with open(state_base + file, 'w') as f:
+    with open(state_base + file, 'w', encoding="utf-8") as f:
         f.write(state)
 
 def load_state(file):
+    """Load state from a file."""
     try:
-        with open(state_base + file, 'r') as f:
+        with open(state_base + file, 'r', encoding="utf-8") as f:
             return json.load(f)
     except FileNotFoundError:
         return {}
