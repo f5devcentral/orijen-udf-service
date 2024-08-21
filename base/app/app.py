@@ -36,7 +36,7 @@ def load_state(file):
 def generate_petname():
     """Generates a pet name in the format 'adjective-animal'"""
     name = petname.Generate()
-    save_state(state_base + "petname", name)
+    save_state("petname", name)
     return name
 
 def b64_lazy_decode(s: str) -> str|None:
