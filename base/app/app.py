@@ -230,14 +230,23 @@ def send_sqs(meta: dict, kill: bool=False) -> dict|None:
 def main():
     """
     Main Function
-    """   
+    """
     metadata = query_metadata()
     labInfo = get_lab_info(metadata)
     sqsMeta = build_sqs_meta(metadata, labInfo)
 
-    petName = load_state("petname")
-    if not petName:
+    first_deploy = False
+    deploy = load_state("depID")
+    if deploy != metadata["depID"]:
+        first_deploy = True
+        save_state("depID", metadata["depID"])
+
+    if first_deploy:
         petName = generate_petname()
+    else:
+        petName = load_state("petname")
+        if not petName:
+            petName = generate_petname()
 
     app = Flask(__name__)
 
